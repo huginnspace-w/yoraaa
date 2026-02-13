@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BUAT MY BEBEE</title>
+  <style>
+    :root{
+      --accent:#d6336c;
+      --accent-2:#ff4d6d;
+      --muted:#666;
+      --bg1:#ffe6e6;
+      --bg2:#fff0f5;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      text-align: center;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(255,77,109,0.06), transparent),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    h1 {
+      color: var(--accent);
+      font-size: clamp(1.6rem, 3.5vw, 2.5em);
+      margin: 6px 0 8px;
+      letter-spacing: .6px;
+      text-shadow: 0 6px 18px rgba(214,51,108,0.12);
+    }
+    .dog {
+      font-size: clamp(48px, 9vw, 90px);
+      animation: bounce 1.5s infinite;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.08));
+    }
+    @keyframes bounce {
+      0%,100%{ transform: translateY(0) }
+      50%{ transform: translateY(-15px) }
+    }
+    p {
+      font-size: clamp(1rem, 2.2vw, 1.2em);
+      margin: 18px 20px;
+      color: #333;
+      font-weight: bold;
+      max-width: 900px;
+      line-height: 1.4;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.6);
+    }
+    .buttons {
+      margin-top: 18px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    button {
+      font-size: clamp(1rem, 2.2vw, 1.2em);
+      padding: 14px 28px;
+      margin: 10px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 300ms cubic-bezier(.2,.9,.2,1), box-shadow 300ms, background-color 250ms;
+      will-change: transform;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      outline: none;
+      color: white;
+      user-select: none;
+    }
+    button:focus{ box-shadow: 0 10px 28px rgba(214,51,108,0.18); transform: translateY(-3px) scale(1.02) }
+    #yes {
+      background-color: var(--accent-2);
+      transform: scale(1);
+    }
+    #no {
+      background-color: var(--muted);
+      transform: scale(1);
+    }
+
+    /* ambient floating hearts */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .heart {
+      position: absolute;
+      font-size: 18px;
+      opacity: 0.9;
+      transform-origin: center;
+      animation: floatUp linear infinite;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.06));
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) rotate(0) scale(0.9); opacity: 0.95 }
+      50% { transform: translateY(-30vh) rotate(90deg) scale(1.05); opacity: 0.9 }
+      100% { transform: translateY(-110vh) rotate(180deg) scale(0.9); opacity: 0 }
+    }
+
+    /* confetti pieces for yes */
+    .confetti {
+      position: fixed;
+      top: -10px;
+      font-size: 30px;
+      animation: fall 3s linear forwards;
+      z-index: 9999;
+      pointer-events: none;
+      transform-origin: center;
+    }
+    @keyframes fall {
+      to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* small responsive tweaks */
+    @media (max-width:420px){
+      .buttons{gap:8px}
+      button{padding:12px 18px;border-radius:10px}
+    }
+  </style>
+</head>
+<body>
+  <h1>haaaaaaaaai sayaaangg, happy valentinee ðŸ¾</h1>
+  <div class="dog">ðŸ¶â¤ï¸ðŸ¶</div>
+  <p>are you wifi? because im feeling the connection. Jadi... seeng, will you be my Valentine? WUAKAKAKAKAKAK LOVE U SAYAAAANGGG</p>
+  <div class="buttons" role="group" aria-label="Valentine choices">
+    <button id="yes" aria-pressed="false">Yes</button>
+    <button id="no" aria-pressed="false">No</button>
+  </div>
+
+  <div class="ambient" aria-hidden="true"></div>
+
+  <script>
+    const yesBtn = document.getElementById('yes');
+    const noBtn = document.getElementById('no');
+    const ambient = document.querySelector('.ambient');
+
+    // --- Audio setup (letakkan setelah deklarasi yesBtn/noBtn/ambient) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Pop / confetti short click
+    function playPop(time = 0) {
+      ensureAudioCtx();
+      const ctx = audioCtx;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(800, ctx.currentTime + time);
+      o.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + time + 0.08);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + time);
+      g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + time + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + time + 0.18);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(ctx.currentTime + time);
+      o.stop(ctx.currentTime + time + 0.2);
+    }
+
+    // Simple synthesized dog bark (noise + pitch)
+    function playBark(time = 0) {
+      ensureAudioCtx();
+      const ctx = audioCtx;
+      const bufferSize = ctx.sampleRate * 0.25;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.6));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const band = ctx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = 800;
+      band.Q.value = 0.8;
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime + time);
+      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + time + 0.12);
+
+      const gNoise = ctx.createGain();
+      const gOsc = ctx.createGain();
+      gNoise.gain.setValueAtTime(0.0001, ctx.currentTime + time);
+      gNoise.gain.exponentialRampToValueAtTime(0.9, ctx.currentTime + time + 0.02);
+      gNoise.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + time + 0.22);
+
+      gOsc.gain.setValueAtTime(0.0001, ctx.currentTime + time);
+      gOsc.gain.exponentialRampToValueAtTime(0.6, ctx.currentTime + time + 0.02);
+      gOsc.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + time + 0.22);
+
+      noise.connect(band);
+      band.connect(gNoise);
+      gNoise.connect(ctx.destination);
+
+      osc.connect(gOsc);
+      gOsc.connect(ctx.destination);
+
+      noise.start(ctx.currentTime + time);
+      noise.stop(ctx.currentTime + time + 0.25);
+      osc.start(ctx.currentTime + time);
+      osc.stop(ctx.currentTime + time + 0.25);
+    }
+    // --- end audio setup ---
+
+    // State for scales
+    let yesScale = 1;
+    let noScale = 1;
+    const YES_MAX = 30;
+    const NO_MIN = 0.1;
+
+    // Animation control
+    let noAnimRunning = false;
+
+    // Utility to apply transforms with shadow emphasis
+    function applyTransforms() {
+      yesBtn.style.transform = `scale(${yesScale})`;
+      yesBtn.style.boxShadow = `0 ${Math.min(yesScale*6,200)}px ${Math.min(yesScale*18,400)}px rgba(255,77,109,0.12)`;
+      noBtn.style.transform = `scale(${noScale})`;
+      noBtn.style.boxShadow = `0 ${Math.min(noScale*6,80)}px ${Math.min(noScale*18,160)}px rgba(0,0,0,0.08)`;
+      yesBtn.setAttribute('aria-pressed', String(yesScale > 1));
+      noBtn.setAttribute('aria-pressed', String(noScale < 1));
+    }
+
+    // Create ambient floating hearts for background
+    const heartEmojis = ["ðŸ’–","ðŸ’•","ðŸŒ¸","ðŸ’ž","ðŸ’˜"];
+    function spawnAmbientHeart() {
+      const el = document.createElement('div');
+      el.className = 'heart';
+      el.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+      const size = Math.random()*18 + 12;
+      el.style.fontSize = size + 'px';
+      el.style.left = (Math.random()*100) + 'vw';
+      el.style.top = (Math.random()*100) + 'vh';
+      el.style.opacity = (Math.random()*0.5 + 0.5).toString();
+      el.style.animationDuration = (Math.random()*6 + 6) + 's';
+      el.style.animationDelay = (Math.random()*-6) + 's';
+      ambient.appendChild(el);
+      // remove after animation
+      setTimeout(()=> el.remove(), 14000);
+    }
+    // spawn a few at start and keep spawning
+    for(let i=0;i<12;i++) spawnAmbientHeart();
+    setInterval(spawnAmbientHeart, 1200);
+
+    // NO button behavior: bertahap tapi bukan sedikit-sedikit
+    // We'll perform a sequence of larger jumps (multiplicative) with short pauses to feel "bertahap" yet dramatic.
+    noBtn.addEventListener('click', () => {
+      if (noAnimRunning) return;
+      noAnimRunning = true;
+
+      // Sequence of jumps: each step multiplies yesScale by a factor >1 (big jump),
+      // and reduces noScale by a fixed decrement (bigger steps).
+      const steps = [
+        {yesFactor: 2.5, noDelta: -0.5, delay: 180},
+        {yesFactor: 2.2, noDelta: -0.6, delay: 180},
+        {yesFactor: 1.8, noDelta: -0.8, delay: 220},
+        {yesFactor: 1.6, noDelta: -1.0, delay: 260},
+        {yesFactor: 1.4, noDelta: -1.2, delay: 300}
+      ];
+
+      let i = 0;
+      function step() {
+        if (i >= steps.length) {
+          // final clamp and finish
+          yesScale = Math.min(YES_MAX, yesScale);
+          noScale = Math.max(NO_MIN, noScale);
+          applyTransforms();
+          noAnimRunning = false;
+          return;
+        }
+        const s = steps[i++];
+        // apply jump
+        yesScale = Math.min(YES_MAX, yesScale * s.yesFactor);
+        noScale = Math.max(NO_MIN, noScale + s.noDelta);
+        // apply with a short CSS transition for smoothness
+        yesBtn.style.transition = `transform ${s.delay}ms cubic-bezier(.2,.9,.2,1), box-shadow ${s.delay}ms`;
+        noBtn.style.transition = `transform ${s.delay}ms cubic-bezier(.2,.9,.2,1), box-shadow ${s.delay}ms`;
+        applyTransforms();
+        // small pause then next step
+        setTimeout(step, s.delay + 40);
+      }
+      step();
+    });
+
+    // YES button behavior: celebratory replacement + confetti + sound
+    yesBtn.addEventListener('click', () => {
+      // ensure audio context active (user gesture)
+      ensureAudioCtx();
+
+      // play sound sequence: pops then bark
+      playPop(0);
+      playPop(0.06);
+      playBark(0.12);
+
+      // gentle click feedback
+      yesBtn.animate([{transform:'scale(1.05)'},{transform:'scale(1)'}], {duration:220, easing:'ease-out'});
+
+      // Replace content (text must remain same elsewhere; this is the success screen)
+      document.body.innerHTML = `
+        <h1 style="color:#d6336c; font-size:2.5em;">
+          YAYAYAYAYAYYYYY WUAKAKAKAKAKAK
+        </h1>
+        <p style="font-size:1.3em; color:#333; font-weight:bold;">
+          LOVE U SAYAANGG
+        </p>
+        <div style="font-size:100px; animation: bounce 1.5s infinite;">ðŸ•ðŸ’˜ðŸ•</div>
+      `;
+
+      // create confetti burst
+      const emojis = ["ðŸ’–","ðŸ¶","ðŸ’•","ðŸ’˜","ðŸ˜‚","ðŸŒ¸","ðŸŽ‰","ðŸ’ž"];
+      for (let i = 0; i < 80; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        confetti.style.left = Math.random() * 100 + "vw";
+        confetti.style.fontSize = (12 + Math.random()*36) + "px";
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + "s";
+        confetti.style.transform = `rotate(${Math.random()*360}deg)`;
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 4500);
+      }
+
+      // optional: small repeated ambient hearts on success
+      const ambient2 = document.createElement('div');
+      ambient2.className = 'ambient';
+      document.body.appendChild(ambient2);
+      for (let i=0;i<18;i++){
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+        h.style.left = (Math.random()*100) + 'vw';
+        h.style.top = (Math.random()*60 + 20) + 'vh';
+        h.style.fontSize = (18 + Math.random()*48) + 'px';
+        h.style.animationDuration = (Math.random()*4 + 4) + 's';
+        ambient2.appendChild(h);
+        setTimeout(()=>h.remove(), 7000);
+      }
+    });
+
+    // keyboard accessibility: Enter/Space on focused buttons
+    [yesBtn, noBtn].forEach(btn => {
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
+
+    // initial apply
+    applyTransforms();
+  </script>
+</body>
+</html>
